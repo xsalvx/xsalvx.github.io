@@ -76,5 +76,26 @@
             }
         });
     </script>
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyA8NuDsruXGjMiu4dYYpSQxsOcMZ8or01Y",
+  authDomain: "seize2exist-980a3.firebaseapp.com",
+  projectId: "seize2exist-980a3",
+  storageBucket: "seize2exist-980a3.firebasestorage.app",
+  messagingSenderId: "584514290923",
+  appId: "1:584514290923:web:118cc87b894997e53feaae",
+  measurementId: "G-W67B5PMKSS"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 </body>
 </html>
