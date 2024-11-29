@@ -1,248 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Firebase SDKs -->
-    <!-- Initialize Firebase with Module Support -->
-    <script type="module">
-        // Import the necessary Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-
-        // Your Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyA8NuDsruXGjMiu4dYYpSQxsOcMZ8or01Y",
-            authDomain: "seize2exist-980a3.firebaseapp.com",
-            projectId: "seize2exist-980a3",
-            storageBucket: "seize2exist-980a3.appspot.com",
-            messagingSenderId: "584514290923",
-            appId: "1:584514290923:web:118cc87b894997e53feaae",
-            measurementId: "G-W67B5PMKSS"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-
-        // Make Firebase instances available globally
-        window.firebaseApp = app;
-        window.firestore = db;
-        window.storage = storage;
-    </script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seize2Exist</title>
+    <title>Notes</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f9f9f9;
-            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f9f9f9;
+        }
+        .notes-container {
+            width: 80%;
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
         }
         textarea {
             width: 100%;
-            height: 100px;
-            margin-bottom: 10px;
+            height: 200px;
+            margin: 10px 0;
             padding: 10px;
             font-size: 16px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            resize: vertical;
+            resize: none;
         }
-        .image-preview img {
-            max-width: 100%;
-            max-height: 300px;
-            margin-top: 10px;
-            display: block;
-        }
-        input[type="file"] {
-            margin-bottom: 10px;
-        }
-        .publish-button {
+        button {
             padding: 10px 20px;
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
             font-size: 16px;
-            margin-bottom: 20px;
-        }
-        .publish-button:hover {
-            background-color: #45a049;
-        }
-        .posts {
-            margin-top: 40px;
-        }
-        .post {
-            background-color: white;
-            padding: 15px;
+            color: white;
+            background: #4caf50;
+            border: none;
             border-radius: 5px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
         }
-        .post img {
-            max-width: 100%;
-            height: auto;
+        button:hover {
+            background: #45a049;
+        }
+        .message {
             margin-top: 10px;
+            font-size: 14px;
+            color: #4caf50;
         }
     </style>
 </head>
 <body>
-    <h1>Simple Notepad with Image Upload</h1>
-    
-    <!-- Textarea for Notes -->
-    <textarea id="notepad" placeholder="Type your notes here..."></textarea>
-    <br>
-    <button id="publishText" class="publish-button">Publish Text</button>
-    
-    <hr>
-    
-    <!-- Image Upload Section -->
-    <label for="imageUpload">Upload an image:</label>
-    <input type="file" id="imageUpload" accept="image/*">
-    <br>
-    <button id="publishImage" class="publish-button">Publish Image</button>
-    <div class="image-preview" id="imagePreview"></div>
+    <div class="notes-container">
+        <h1>Write a Note</h1>
+        <textarea id="note" placeholder="Type your note here..."></textarea>
+        <button id="saveNote">Save Note</button>
+        <div class="message" id="message"></div>
+    </div>
 
-    <!-- Section to Display Published Posts -->
-    <div class="posts" id="posts"></div>
+    <script>
+        const saveButton = document.getElementById('saveNote');
+        const message = document.getElementById('message');
+        const noteField = document.getElementById('note');
 
-    <!-- Main Script -->
-    <script type="module">
-        // Access Firebase instances from the global scope
-        const db = window.firestore;
-        const storage = window.storage;
-
-        // Elements
-        const notepad = document.getElementById('notepad');
-        const publishTextBtn = document.getElementById('publishText');
-        const imageUpload = document.getElementById('imageUpload');
-        const publishImageBtn = document.getElementById('publishImage');
-        const imagePreview = document.getElementById('imagePreview');
-        const postsDiv = document.getElementById('posts');
-
-        // Restore text from local storage
-        const savedText = localStorage.getItem('notepadText');
-        if (savedText) {
-            notepad.value = savedText;
+        // Load Google API client library
+        function loadGoogleApi() {
+            const script = document.createElement('script');
+            script.src = "https://apis.google.com/js/api.js";
+            script.onload = initializeGoogleApi;
+            document.body.appendChild(script);
         }
 
-        // Save text to local storage on input
-        notepad.addEventListener('input', () => {
-            localStorage.setItem('notepadText', notepad.value);
-        });
-
-        // Preview selected image
-        imageUpload.addEventListener('change', () => {
-            const file = imageUpload.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    imagePreview.innerHTML = `<img src="${reader.result}" alt="Image Preview">`;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                imagePreview.innerHTML = '';
-            }
-        });
-
-        // Publish Text Functionality
-        publishTextBtn.addEventListener('click', async () => {
-            const text = notepad.value.trim();
-            if (text === "") {
-                alert("Cannot publish empty text.");
-                return;
-            }
-
-            try {
-                await addDoc(collection(db, "posts"), {
-                    type: "text",
-                    content: text,
-                    timestamp: new Date()
+        // Initialize the Google API
+        function initializeGoogleApi() {
+            gapi.load('client:auth2', () => {
+                gapi.client.init({
+                    apiKey: 'YOUR_API_KEY',
+                    clientId: 'YOUR_CLIENT_ID',
+                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+                    scope: "https://www.googleapis.com/auth/drive.file"
                 });
-                alert("Text published successfully!");
-                // Optionally, clear the notepad
-                // notepad.value = "";
-                // localStorage.removeItem('notepadText');
-            } catch (error) {
-                console.error("Error publishing text: ", error);
-                alert("Failed to publish text.");
-            }
-        });
-
-        // Publish Image Functionality
-        publishImageBtn.addEventListener('click', async () => {
-            const file = imageUpload.files[0];
-            if (!file) {
-                alert("Please select an image to publish.");
-                return;
-            }
-
-            try {
-                // Create a storage reference
-                const storageRef = ref(storage, `images/${Date.now()}_${file.name}`);
-                
-                // Upload the file
-                await uploadBytes(storageRef, file);
-                
-                // Get the download URL
-                const downloadURL = await getDownloadURL(storageRef);
-                
-                // Save the image URL to Firestore
-                await addDoc(collection(db, "posts"), {
-                    type: "image",
-                    content: downloadURL,
-                    timestamp: new Date()
-                });
-                
-                alert("Image published successfully!");
-                // Optionally, clear the image upload
-                // imageUpload.value = "";
-                // imagePreview.innerHTML = "";
-            } catch (error) {
-                console.error("Error publishing image: ", error);
-                alert("Failed to publish image.");
-            }
-        });
-
-        // Function to Render Posts
-        const renderPosts = (posts) => {
-            postsDiv.innerHTML = ""; // Clear existing posts
-            posts.forEach(doc => {
-                const post = doc.data();
-                const postDiv = document.createElement('div');
-                postDiv.classList.add('post');
-
-                if (post.type === "text") {
-                    const textPara = document.createElement('p');
-                    textPara.textContent = post.content;
-                    postDiv.appendChild(textPara);
-                } else if (post.type === "image") {
-                    const img = document.createElement('img');
-                    img.src = post.content;
-                    img.alt = "Published Image";
-                    postDiv.appendChild(img);
-                }
-
-                // Optionally, add a timestamp
-                const timestamp = document.createElement('small');
-                const date = post.timestamp.toDate();
-                timestamp.textContent = `Published on: ${date.toLocaleString()}`;
-                postDiv.appendChild(timestamp);
-
-                postsDiv.appendChild(postDiv);
             });
-        };
+        }
 
-        // Real-time Listener for Posts Collection
-        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-        onSnapshot(q, (snapshot) => {
-            const posts = snapshot.docs;
-            renderPosts(posts);
+        // Save the note to Google Drive
+        saveButton.addEventListener('click', () => {
+            const note = noteField.value;
+
+            if (!note) {
+                message.textContent = "Please type something before saving.";
+                return;
+            }
+
+            gapi.auth2.getAuthInstance().signIn().then(() => {
+                const fileContent = note; // Note content
+                const file = new Blob([fileContent], { type: 'text/plain' });
+
+                const metadata = {
+                    name: `Note_${Date.now()}.txt`,
+                    mimeType: 'text/plain'
+                };
+
+                const formData = new FormData();
+                formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                formData.append('file', file);
+
+                fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + gapi.auth.getToken().access_token
+                    },
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        message.textContent = "Note saved successfully!";
+                        noteField.value = "";
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        message.textContent = "Error saving note. Try again.";
+                    });
+            });
         });
+
+        // Load the Google API
+        loadGoogleApi();
     </script>
 </body>
 </html>
